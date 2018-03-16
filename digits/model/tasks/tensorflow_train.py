@@ -174,7 +174,15 @@ class TensorflowTrainTask(TrainTask):
     @override
     def task_arguments(self, resources, env):
 
-        args = [sys.executable,
+        args = ['/usr/local/bin/mpirun',
+                '-np',1,
+                '-hostfile','/home/nfsdir/nfsdir/zyf/hostfile',
+                '-bind-to', 'none',
+                '-map-by','slot',
+                '--allow-run-as-root',
+                '-x','NCCL_DEBUG=INFO',
+                '-x','LD_LIBRARY_PATH',
+                sys.executable,
                 os.path.join(os.path.dirname(os.path.abspath(digits.__file__)), 'tools', 'tensorflow', 'main.py'),
                 '--network=%s' % self.model_file,
                 '--epoch=%d' % int(self.train_epochs),
