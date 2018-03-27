@@ -702,7 +702,7 @@ def main(_):
     print('Training wall-time:', time.time() - start)  # @TODO(tzaman) - removeme
 
     # If required, perform final Validation pass
-    if FLAGS.validation_db and current_epoch >= next_validation:
+    if hvd.rank() == 0 and FLAGS.validation_db and current_epoch >= next_validation:
         Validation(sess, val_model, current_epoch)
 
     if FLAGS.train_db:
@@ -725,7 +725,7 @@ def main(_):
     tf.reset_default_graph()
 
     del sess
-    if FLAGS.train_db:
+    if hvd.rank() == 0 and FLAGS.train_db:
         if FLAGS.labels_list:
             path_frozen = os.path.join(FLAGS.save, 'frozen_model.pb')
             print('Saving frozen model at path {}'.format(path_frozen))

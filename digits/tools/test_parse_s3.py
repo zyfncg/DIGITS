@@ -10,7 +10,7 @@ from nose.tools import raises, assert_raises
 
 try:
     from . import parse_s3
-    from digits.tools.mock_s3_walker import MockS3Walker
+    from digits.tools import MockS3Walker
     import_failed = False
 except ImportError:
     import_failed = True

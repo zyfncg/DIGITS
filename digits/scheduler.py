@@ -403,6 +403,7 @@ class Scheduler:
                                         if self.reserve_resources(task, requested_resources):
                                             gevent.spawn(self.run_task,
                                                          task, requested_resources)
+                                            task.status = Status.RUN
                             elif task.status == Status.RUN:
                                 # job is not done
                                 alldone = False

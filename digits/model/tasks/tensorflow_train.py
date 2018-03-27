@@ -17,6 +17,7 @@ from .train import TrainTask
 import digits
 from digits import utils
 from digits.utils import subclass, override, constants
+from digits.tools.k8s.k8s_coordinate import KubernetasCoord
 import tensorflow as tf
 
 # NOTE: Increment this everytime the pickled object changes
@@ -137,6 +138,9 @@ class TensorflowTrainTask(TrainTask):
         self.last_train_update = None
         self.displaying_network = False
         self.temp_unrecognized_output = []
+
+        self.kube_coodi = KubernetasCoord(self.logger)
+        self.kube_coodi.container_prepare(job_id='mpi-nodes', slots=1, job_dir=self.job_dir)
         return True
 
     @override
@@ -174,14 +178,14 @@ class TensorflowTrainTask(TrainTask):
     @override
     def task_arguments(self, resources, env):
 
-        args = ['/usr/local/bin/mpirun',
-                '-np',1,
-                '-hostfile','/home/nfsdir/nfsdir/zyf/hostfile',
+        args = ['/usr/local/mpi/bin/mpirun',
+                '-np', '%d' % self.node_count,
+                '-hostfile', os.path.join(self.job_dir, 'hostfile'),
                 '-bind-to', 'none',
-                '-map-by','slot',
+                '-map-by', 'slot',
                 '--allow-run-as-root',
-                '-x','NCCL_DEBUG=INFO',
-                '-x','LD_LIBRARY_PATH',
+                '-x', 'NCCL_DEBUG=INFO',
+                '-x', 'LD_LIBRARY_PATH',
                 sys.executable,
                 os.path.join(os.path.dirname(os.path.abspath(digits.__file__)), 'tools', 'tensorflow', 'main.py'),
                 '--network=%s' % self.model_file,
@@ -446,6 +450,8 @@ class TensorflowTrainTask(TrainTask):
             else:
                 self.traceback = '\n'.join(self.temp_unrecognized_output)
                 self.temp_unrecognized_output = []
+        # TODO
+        self.kube_coodi.delete_pods(job_id="mpi-nodes")
         self.tensorflow_log.close()
 
     @override

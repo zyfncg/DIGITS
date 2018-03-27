@@ -49,6 +49,8 @@ class TrainTask(Task):
         random_seed -- optional random seed
         data_aug -- data augmentation options
         """
+
+        self.node_count = kwargs.pop('node_count', None),
         self.gpu_count = kwargs.pop('gpu_count', None)
         self.selected_gpus = kwargs.pop('selected_gpus', None)
         self.batch_size = kwargs.pop('batch_size', None)

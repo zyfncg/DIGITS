@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mpi-nodes
+  labels:
+    app: mpi-nodes
+spec:
+  completions: 2
+  parallelism: 2
+  template:
+    metadata:
+      labels:
+        app: mpi-nodes
+    spec:
+      nodeSelector:
+          kubernetes.io/hostname: node02
+      containers:
+      - image: digits:horovodv3
+        name : mpi-nodes
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            cpu: 4
+            memory: 8Gi
+          requests:
+            nvidia.com/gpu: 1
+            cpu: 4
+            memory: 8Gi
+        command: ['/usr/sbin/sshd']
+        args: ['-D']
+        volumeMounts:
+          - name: nfs-storage
+            readOnly: false
+            mountPath: /home/nfsdir
+        ports:
+          - name: tensorflow-1
+            containerPort: 5000
+          - name: tensorflow-2
+            containerPort: 22
+      restartPolicy: Never
+      volumes:
+        - name: nfs-storage
+          nfs:
+            server: 10.18.95.2
+            path: "/home/nfsdir"
+

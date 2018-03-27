@@ -369,6 +369,14 @@ class ModelForm(Form):
                                             default=1,
                                             )
 
+    # Use available N nodes
+    select_node_count = wtforms.IntegerField('Use this many nodes (next available)',
+                                             validators=[
+                                                validators.NumberRange(min=1, max=4)
+                                             ],
+                                             default=1,
+                                             )
+
     def validate_select_gpu_count(form, field):
         if field.data is None:
             if form.select_gpus.data:

@@ -247,6 +247,11 @@ def create():
                 raise werkzeug.exceptions.BadRequest(
                     'Invalid learning rate policy')
 
+            if form.select_node_count.data:
+                node_count = form.select_node_count.data
+            else:
+                node_count = None
+
             if config_value('caffe')['multi_gpu']:
                 if form.select_gpus.data:
                     selected_gpus = [str(gpu) for gpu in form.select_gpus.data]
@@ -294,6 +299,7 @@ def create():
                 snapshot_interval=form.snapshot_interval.data,
                 learning_rate=form.learning_rate.data[0],
                 lr_policy=policy,
+                node_count=node_count,
                 gpu_count=gpu_count,
                 selected_gpus=selected_gpus,
                 batch_size=form.batch_size.data[0],

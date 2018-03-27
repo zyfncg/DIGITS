@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mpi-header
+  labels:
+    app: mpi-header
+spec:
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: mpi-header
+    spec:
+      nodeSelector:
+          kubernetes.io/hostname: node02
+      containers:
+      - image: digits:horovodv2
+        name : mpi-header
+        resources:
+          limits:
+            cpu: 500m
+            memory: 8Gi
+          requests:
+            cpu: 500m
+            memory: 8Gi
+        command: ['/usr/sbin/sshd']
+        args: ['-D']
+        volumeMounts:
+          - name: nfs-storage
+            readOnly: false
+            mountPath: /home/nfsdir
+        ports:
+          - name: tensorflow-1
+            containerPort: 5000
+          - name: tensorflow-2
+            containerPort: 22
+      volumes:
+        - name: nfs-storage
+          nfs:
+            server: 10.18.95.2
+            path: "/home/nfsdir"
+       
