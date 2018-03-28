@@ -139,8 +139,9 @@ class TensorflowTrainTask(TrainTask):
         self.displaying_network = False
         self.temp_unrecognized_output = []
 
-        self.kube_coodi = KubernetasCoord(self.logger)
-        self.kube_coodi.container_prepare(job_id='mpi-nodes', slots=1, job_dir=self.job_dir)
+        kube_cood = KubernetasCoord(self.logger)
+        kube_cood.container_prepare(job_id=self.job_id, node_count=self.node_count,
+                                    slots=1, job_dir=self.job_dir)
         return True
 
     @override
@@ -450,8 +451,8 @@ class TensorflowTrainTask(TrainTask):
             else:
                 self.traceback = '\n'.join(self.temp_unrecognized_output)
                 self.temp_unrecognized_output = []
-        # TODO
-        self.kube_coodi.delete_pods(job_id="mpi-nodes")
+
+        KubernetasCoord.delete_pods(job_id=self.job_id)
         self.tensorflow_log.close()
 
     @override

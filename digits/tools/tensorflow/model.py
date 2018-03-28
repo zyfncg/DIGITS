@@ -109,13 +109,10 @@ class Model(object):
                     tf.add_to_collection(digits.GraphKeys.LOSSES, loss)
 
                     self.summaries.append(tf.summary.scalar('loss', loss))
-            
 
         if self.stage == digits.STAGE_TRAIN:
             opt = hvd.DistributedOptimizer(self.optimizer)
             self._train = opt.minimize(loss, global_step=self.global_step)
-
-
 
     def start_queue_runners(self, sess):
         logging.info('Starting queue runners (%s)', self.stage)

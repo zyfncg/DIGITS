@@ -493,7 +493,7 @@ def main(_):
             train_model.dataloader.set_augmentation(mean_loader, aug_dict)
             train_model.create_model(UserModel, stage_scope)  # noqa
 
-    if FLAGS.validation_db:
+    if hvd.rank() == 0 and FLAGS.validation_db:
         with tf.name_scope(digits.STAGE_VAL) as stage_scope:
             val_model = Model(digits.STAGE_VAL, FLAGS.croplen, nclasses, reuse_variable=True)
             val_model.create_dataloader(FLAGS.validation_db)
@@ -570,7 +570,7 @@ def main(_):
     start = time.time()  # @TODO(tzaman) - removeme
 
     # Initial Forward Validation Pass
-    if FLAGS.validation_db:
+    if hvd.rank() == 0 and FLAGS.validation_db:
         val_model.start_queue_runners(sess)
         Validation(sess, val_model, 0)
 
@@ -656,7 +656,7 @@ def main(_):
                 # @TODO(tzaman): account for variable batch_size value on very last epoch
                 current_epoch = round((step * batch_size_train) / train_model.dataloader.get_total(), epoch_round)
                 # Start with a forward pass
-                if ((step % logging_interval_step) == 0):
+                if hvd.rank() == 0 and (step % logging_interval_step) == 0:
                     steps_since_log = step - step_last_log
                     print_list = print_summarylist(tags, print_vals_sum / steps_since_log)
                     logging.info("Training (epoch " + str(current_epoch) + "): " + print_list)
@@ -664,7 +664,7 @@ def main(_):
                     step_last_log = step
 
                 # Potential Validation Pass
-                if FLAGS.validation_db and current_epoch >= next_validation:
+                if hvd.rank() == 0 and FLAGS.validation_db and current_epoch >= next_validation:
                     Validation(sess, val_model, current_epoch)
                     # Find next nearest epoch value that exactly divisible by FLAGS.validation_interval:
                     next_validation = (round(float(current_epoch) / FLAGS.validation_interval) + 1) * \
@@ -712,7 +712,7 @@ def main(_):
 
     if FLAGS.train_db:
         del train_model
-    if FLAGS.validation_db:
+    if hvd.rank() == 0 and FLAGS.validation_db:
         del val_model
     if FLAGS.inference_db:
         del inf_model

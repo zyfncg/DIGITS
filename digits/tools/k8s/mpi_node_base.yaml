@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: $name$
+  labels:
+    app: $label$
+spec:
+  replicas: $node_count$
+  template:
+    metadata:
+      labels:
+        app: $label$
+    spec:
+      nodeSelector:
+          kubernetes.io/hostname: node02
+      containers:
+      - image: digits:horovodv3
+        name : $name$
+        resources:
+          limits:
+            cpu: 4
+            memory: 8Gi
+          requests:
+            cpu: 4
+            memory: 8Gi
+        command: ['/usr/sbin/sshd']
+        args: ['-D']
+        volumeMounts:
+          - name: nfs-storage
+            readOnly: false
+            mountPath: /home/nfsdir
+        ports:
+          - name: digits-port
+            containerPort: 5000
+          - name: ssh-port
+            containerPort: 22
+      volumes:
+        - name: nfs-storage
+          nfs:
+            server: 10.18.95.2
+            path: "/home/nfsdir"
+
