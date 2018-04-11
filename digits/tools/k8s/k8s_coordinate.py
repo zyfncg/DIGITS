@@ -32,7 +32,7 @@ class KubernetasCoord(object):
         return status_list
 
     @staticmethod
-    def generate_yaml(job_dir, pod_label, node_count):
+    def generate_yaml(job_dir, pod_label, node_count, gpu_count):
 
         digits_path = os.path.dirname(digits.__file__)
         yaml_path = os.path.join(digits_path, 'tools/k8s/mpi_node_base.yaml')
@@ -49,6 +49,9 @@ class KubernetasCoord(object):
                         w_file.write(new_line)
                     elif line.find("$node_count$") >= 0:
                         new_line = line.replace("$node_count$", '%d' % node_count)
+                        w_file.write(new_line)
+                    elif line.find("$gpu_count$") >= 0:
+                        new_line = line.replace("$gpu_count$", '%d' % gpu_count)
                         w_file.write(new_line)
                     else:
                         w_file.write(line)
@@ -94,9 +97,9 @@ class KubernetasCoord(object):
         f.writelines(lines)
         f.close()
 
-    def container_prepare(self, job_id, job_dir='/home/nfsdir/nfsdir/zyf', node_count=1, slots=1):
+    def container_prepare(self, job_id, job_dir='/home/nfsdir/nfsdir/zyf', node_count=1, gpu_count=1, slots=1):
         pod_label = self.get_pod_name(job_id)
-        yaml_path = self.generate_yaml(job_dir=job_dir, pod_label=pod_label, node_count=node_count)
+        yaml_path = self.generate_yaml(job_dir=job_dir, pod_label=pod_label, node_count=node_count, gpu_count=gpu_count)
         self.create_deployment(yaml_path, pod_label=pod_label)
         self.generate_hostfile(pod_label=pod_label, slots=slots, job_dir=job_dir)
 

@@ -17,7 +17,6 @@ from .train import TrainTask
 import digits
 from digits import utils
 from digits.utils import subclass, override, constants
-from digits.tools.k8s.k8s_coordinate import KubernetasCoord
 import tensorflow as tf
 
 # NOTE: Increment this everytime the pickled object changes
@@ -139,9 +138,6 @@ class TensorflowTrainTask(TrainTask):
         self.displaying_network = False
         self.temp_unrecognized_output = []
 
-        kube_cood = KubernetasCoord(self.logger)
-        kube_cood.container_prepare(job_id=self.job_id, node_count=self.node_count,
-                                    slots=1, job_dir=self.job_dir)
         return True
 
     @override
@@ -179,15 +175,7 @@ class TensorflowTrainTask(TrainTask):
     @override
     def task_arguments(self, resources, env):
 
-        args = ['/usr/local/mpi/bin/mpirun',
-                '-np', '%d' % self.node_count,
-                '-hostfile', os.path.join(self.job_dir, 'hostfile'),
-                '-bind-to', 'none',
-                '-map-by', 'slot',
-                '--allow-run-as-root',
-                '-x', 'NCCL_DEBUG=INFO',
-                '-x', 'LD_LIBRARY_PATH',
-                sys.executable,
+        args = [sys.executable,
                 os.path.join(os.path.dirname(os.path.abspath(digits.__file__)), 'tools', 'tensorflow', 'main.py'),
                 '--network=%s' % self.model_file,
                 '--epoch=%d' % int(self.train_epochs),
@@ -198,6 +186,8 @@ class TensorflowTrainTask(TrainTask):
                 '--lr_base_rate=%s' % self.learning_rate,
                 '--lr_policy=%s' % str(self.lr_policy['policy'])
                 ]
+        # use mpi args
+        args[0:0] = self.get_mpi_args(node_count=self.node_count, slots=self.slots)
 
         if self.batch_size is not None:
             args.append('--batch_size=%d' % self.batch_size)
@@ -445,6 +435,7 @@ class TensorflowTrainTask(TrainTask):
     # TrainTask overrides
     @override
     def after_run(self):
+        super(TensorflowTrainTask, self).after_run()
         if self.temp_unrecognized_output:
             if self.traceback:
                 self.traceback = self.traceback + ('\n'.join(self.temp_unrecognized_output))
@@ -452,7 +443,6 @@ class TensorflowTrainTask(TrainTask):
                 self.traceback = '\n'.join(self.temp_unrecognized_output)
                 self.temp_unrecognized_output = []
 
-        KubernetasCoord.delete_pods(job_id=self.job_id)
         self.tensorflow_log.close()
 
     @override

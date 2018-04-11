@@ -122,6 +122,9 @@ class CaffeTrainTask(TrainTask):
         network -- a caffe NetParameter defining the network
         """
         super(CaffeTrainTask, self).__init__(**kwargs)
+
+        self.slots = 1
+
         self.pickver_task_caffe_train = PICKLE_VERSION
 
         self.current_iteration = 0
@@ -921,10 +924,17 @@ class CaffeTrainTask(TrainTask):
 
         # Not in Windows, or in Windows but no Python Layer
         # This is the normal path
-        args = [config_value('caffe')['executable'],
+        # args = [config_value('caffe')['executable'],
+        #         'train',
+        #         '--solver=%s' % self.path(self.solver_file),
+        #         ]
+        args = ['/opt/caffe-mpi/build/tools/caffe',
                 'train',
                 '--solver=%s' % self.path(self.solver_file),
                 ]
+
+        # use mpi args
+        args[0:0] = self.get_mpi_args(node_count=self.node_count, slots=self.slots)
 
         if 'gpus' in resources:
             identifiers = []

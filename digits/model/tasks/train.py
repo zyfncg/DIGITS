@@ -11,6 +11,7 @@ import psutil
 
 from digits import device_query
 from digits.task import Task
+from digits.tools.k8s.k8s_coordinate import KubernetasCoord
 from digits.utils import subclass, override
 
 # NOTE: Increment this every time the picked object changes
@@ -50,8 +51,9 @@ class TrainTask(Task):
         data_aug -- data augmentation options
         """
 
-        self.node_count = kwargs.pop('node_count', None),
+        self.node_count = kwargs.pop('node_count', None)
         self.gpu_count = kwargs.pop('gpu_count', None)
+        self.slots = self.gpu_count
         self.selected_gpus = kwargs.pop('selected_gpus', None)
         self.batch_size = kwargs.pop('batch_size', None)
         self.batch_accumulation = kwargs.pop('batch_accumulation', None)
@@ -129,6 +131,20 @@ class TrainTask(Task):
         self.timeline_traces = []
         self.dataset = None
 
+    def get_mpi_args(self, node_count, slots):
+        if True:
+            mpi_args = ['/usr/local/mpi/bin/mpirun',
+                        '-np', '%d' % (node_count * slots),
+                        '-hostfile', os.path.join(self.job_dir, 'hostfile'),
+                        '-bind-to', 'none',
+                        '-map-by', 'slot',
+                        '--allow-run-as-root',
+                        '-x', 'NCCL_DEBUG=INFO',
+                        '-x', 'LD_LIBRARY_PATH',
+                        ]
+            return mpi_args
+        return []
+
     @override
     def offer_resources(self, resources):
         if 'gpus' not in resources:
@@ -170,6 +186,10 @@ class TrainTask(Task):
         gpus = None
         if 'gpus' in self.current_resources:
             gpus = [identifier for (identifier, value) in self.current_resources['gpus']]
+
+        kube_cood = KubernetasCoord(self.logger)
+        kube_cood.container_prepare(job_id=self.job_id, node_count=self.node_count,
+                                    gpu_count=self.gpu_count, slots=self.slots, job_dir=self.job_dir)
 
         self._hw_socketio_thread = gevent.spawn(
             self.hw_socketio_updater,
@@ -381,6 +401,7 @@ class TrainTask(Task):
     def after_run(self):
         if hasattr(self, '_hw_socketio_thread'):
             self._hw_socketio_thread.kill()
+        KubernetasCoord.delete_pods(job_id=self.job_id)
 
     def detect_snapshots(self):
         """

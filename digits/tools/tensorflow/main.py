@@ -45,8 +45,6 @@ from utils import model_property  # noqa
 
 import tf_data
 
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-
 # Constants
 TF_INTRA_OP_THREADS = 0
 TF_INTER_OP_THREADS = 0
@@ -522,12 +520,9 @@ def main(_):
 
     # Pin GPU to be used to process local rank (one GPU per process)
     config = tf.ConfigProto()
-    # config.allow_soft_placement = True
+    config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
-    config.gpu_options.visible_device_list = str(hvd.local_rank())
-
-    # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
-    checkpoint_dir = FLAGS.save if hvd.rank() == 0 else None
+    # config.gpu_options.visible_device_list = str(hvd.local_rank())
 
     sess = tf.Session(config=config)
 

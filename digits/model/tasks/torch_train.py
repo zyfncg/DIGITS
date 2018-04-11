@@ -178,6 +178,9 @@ class TorchTrainTask(TrainTask):
                 '--dbbackend=%s' % dataset_backend
                 ]
 
+        # use mpi args
+        args[0:0] = self.get_mpi_args(node_count=1, slots=1)
+
         if self.batch_size is not None:
             args.append('--batchSize=%d' % self.batch_size)
 
@@ -454,6 +457,7 @@ class TorchTrainTask(TrainTask):
     # TrainTask overrides
     @override
     def after_run(self):
+        super(TorchTrainTask, self).after_run()
         if self.temp_unrecognized_output:
             if self.traceback:
                 self.traceback = self.traceback + ('\n'.join(self.temp_unrecognized_output))

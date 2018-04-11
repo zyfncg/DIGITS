@@ -14,13 +14,15 @@ spec:
       nodeSelector:
           kubernetes.io/hostname: node02
       containers:
-      - image: digits:horovodv3
+      - image: digits:mpi0411v1
         name : $name$
         resources:
           limits:
+            nvidia.com/gpu: $gpu_count$
             cpu: 4
             memory: 8Gi
           requests:
+            nvidia.com/gpu: $gpu_count$
             cpu: 4
             memory: 8Gi
         command: ['/usr/sbin/sshd']
